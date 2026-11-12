@@ -213,6 +213,41 @@ public class MainActivityTest {
     }
 
     @Test
+    public void testEmptyRetriesError() {
+        assertRetriesError("");
+    }
+
+    @Test
+    public void testOverflowRetriesError() {
+        // Digits-only input can still exceed Integer.MAX_VALUE.
+        assertRetriesError("99999999999");
+    }
+
+    // Used to crash the app with NumberFormatException instead of showing an error.
+    private void assertRetriesError(String retries) {
+        onView(withId(R.id.btn_add)).perform(click());
+        ViewInteraction dialog = onView(withId(R.id.dialog_config_edit_form));
+
+        onView(withId(R.id.input_phone))
+                .perform(scrollTo(), typeText("test"));
+
+        onView(withId(R.id.input_url))
+                .perform(scrollTo(), typeText("https://example.com"));
+
+        onView(withId(R.id.advanced_header)).perform(scrollTo(), click());
+
+        onView(withId(R.id.input_number_retries))
+                .perform(scrollTo(), replaceText(retries), closeSoftKeyboard());
+
+        onView(withText(R.string.btn_add)).perform(click());
+
+        onView(withId(R.id.input_number_retries))
+                .check(matches(hasErrorText(getResourceString(R.string.error_wrong_retries_number))));
+
+        dialog.check(matches(isDisplayed()));
+    }
+
+    @Test
     public void testAddDeleteRecord() {
         String sender = "1234";
         String url = "https://example.com";

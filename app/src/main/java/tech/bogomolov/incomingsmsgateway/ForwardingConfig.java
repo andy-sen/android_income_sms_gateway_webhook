@@ -425,8 +425,12 @@ public class ForwardingConfig {
             }
             String value;
             switch (placeholder) {
+                // %from% and %sim% are JSON-escaped like %text%: an alphanumeric
+                // sender ID is attacker-chosen and may contain '"' or '\', which
+                // would otherwise break out of the template's JSON string and
+                // inject fields into the payload. Plain numbers pass through as-is.
                 case "from":
-                    value = from;
+                    value = StringEscapeUtils.escapeJson(from);
                     break;
                 case "sentStamp":
                     value = arg == null ? String.valueOf(timeStamp)
@@ -437,7 +441,7 @@ public class ForwardingConfig {
                             : StringEscapeUtils.escapeJson(formatStamp(arg, receivedStamp));
                     break;
                 case "sim":
-                    value = sim;
+                    value = StringEscapeUtils.escapeJson(sim);
                     break;
                 case "text":
                     value = StringEscapeUtils.escapeJson(content);

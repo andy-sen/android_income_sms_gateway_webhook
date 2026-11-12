@@ -111,6 +111,44 @@ public class ForwardingConfigPrepareMessageTest {
     }
 
     @Test
+    public void testQuoteInSenderCannotInjectJsonFields() {
+        // A spoofed alphanumeric sender ID like `","x":"` must stay inside the
+        // "from" string instead of closing it and injecting a new field.
+        ForwardingConfig config = configWithTemplate("{\"from\":\"%from%\",\"text\":\"%text%\"}");
+
+        String result = config.prepareMessage("\",\"x\":\"", "hi", "sim1", 0L);
+
+        assertEquals("{\"from\":\"\\\",\\\"x\\\":\\\"\",\"text\":\"hi\"}", result);
+    }
+
+    @Test
+    public void testBackslashInSenderIsEscaped() {
+        ForwardingConfig config = configWithTemplate("\"from\":\"%from%\"");
+
+        String result = config.prepareMessage("a\\b", "hi", "sim1", 0L);
+
+        assertEquals("\"from\":\"a\\\\b\"", result);
+    }
+
+    @Test
+    public void testPhoneNumberSenderIsUnchanged() {
+        ForwardingConfig config = configWithTemplate("\"from\":\"%from%\"");
+
+        String result = config.prepareMessage("+15551234567", "hi", "sim1", 0L);
+
+        assertEquals("\"from\":\"+15551234567\"", result);
+    }
+
+    @Test
+    public void testQuoteInSimIsEscaped() {
+        ForwardingConfig config = configWithTemplate("\"sim\":\"%sim%\"");
+
+        String result = config.prepareMessage("123", "hi", "s\"1", 0L);
+
+        assertEquals("\"sim\":\"s\\\"1\"", result);
+    }
+
+    @Test
     public void testNewlineInTextIsEscaped() {
         ForwardingConfig config = configWithTemplate("[%text%]");
 

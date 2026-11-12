@@ -17,10 +17,13 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
+        <!-- Not exported: only this app (MainActivity, SettingsActivity,
+             BootCompletedReceiver) starts it, via explicit intents. Exporting it
+             would let any installed app start it or re-trigger the heartbeat. -->
         <service
             android:name=".SmsReceiverService"
             android:enabled="true"
-            android:exported="true" />
+            android:exported="false" />
 
         <!--
             SMS delivery is driven by this manifest-declared receiver, not by a
