@@ -212,7 +212,14 @@ public class SettingsActivity extends AppCompatActivity {
 
         final EditText intervalInput = findViewById(R.id.input_heartbeat_interval);
         String intervalText = intervalInput.getText().toString().trim();
-        int interval = intervalText.isEmpty() ? 0 : Integer.parseInt(intervalText);
+        // Empty or too large for an int (the input is digits-only) parses as 0, so
+        // it hits the "wrong interval" error below instead of crashing.
+        int interval;
+        try {
+            interval = intervalText.isEmpty() ? 0 : Integer.parseInt(intervalText);
+        } catch (NumberFormatException e) {
+            interval = 0;
+        }
 
         if (enabled) {
             if (TextUtils.isEmpty(url)) {

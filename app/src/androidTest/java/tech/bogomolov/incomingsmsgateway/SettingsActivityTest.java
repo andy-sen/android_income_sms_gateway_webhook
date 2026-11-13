@@ -98,6 +98,22 @@ public class SettingsActivityTest {
     }
 
     @Test
+    public void testEnabledOverflowIntervalError() {
+        // Digits-only input can still exceed Integer.MAX_VALUE; this used to crash
+        // with NumberFormatException instead of showing the inline error.
+        onView(withId(R.id.input_heartbeat_enabled)).perform(scrollTo(), click());
+        onView(withId(R.id.input_heartbeat_url))
+                .perform(scrollTo(), replaceText("https://example.com"), closeSoftKeyboard());
+        onView(withId(R.id.input_heartbeat_interval))
+                .perform(scrollTo(), replaceText("99999999999"), closeSoftKeyboard());
+
+        onView(withId(R.id.btn_heartbeat_save)).perform(scrollTo(), click());
+
+        onView(withId(R.id.input_heartbeat_interval))
+                .check(matches(hasErrorText(getResourceString(R.string.error_wrong_interval))));
+    }
+
+    @Test
     public void testDisabledSavePersists() {
         // Left disabled on purpose: applyHeartbeat() then returns early without
         // starting the foreground service, so the form values just persist.

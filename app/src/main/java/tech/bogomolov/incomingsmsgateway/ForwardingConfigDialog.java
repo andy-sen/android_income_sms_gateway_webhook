@@ -1,9 +1,8 @@
 package tech.bogomolov.incomingsmsgateway;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
+import android.os.Handler;
+import android.os.Looper;
 import android.telephony.SubscriptionManager;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -27,8 +26,6 @@ import java.util.Objects;
 
 public class ForwardingConfigDialog {
 
-    static final public String BROADCAST_KEY = "TEST_RESULT";
-
     final private Context context;
     final private LayoutInflater layoutInflater;
     final private ListAdapter listAdapter;
@@ -37,16 +34,6 @@ public class ForwardingConfigDialog {
         this.context = context;
         this.layoutInflater = layoutInflater;
         this.listAdapter = listAdapter;
-
-        IntentFilter filter = new IntentFilter(BROADCAST_KEY);
-        BroadcastReceiver testResult = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String result = intent.getStringExtra(BROADCAST_KEY);
-                Toast.makeText(context.getApplicationContext(), result, Toast.LENGTH_LONG).show();
-            }
-        };
-        context.registerReceiver(testResult, filter);
     }
 
     public void showNew() {
@@ -239,7 +226,14 @@ public class ForwardingConfigDialog {
         }
 
         final EditText retriesNumInput = view.findViewById(R.id.input_number_retries);
-        int retriesNum = Integer.parseInt(retriesNumInput.getText().toString());
+        // An empty or out-of-range field (the input is digits-only, but can be
+        // cleared or exceed int) must show an error, not crash the app.
+        int retriesNum;
+        try {
+            retriesNum = Integer.parseInt(retriesNumInput.getText().toString().trim());
+        } catch (NumberFormatException e) {
+            retriesNum = -1;
+        }
         if (retriesNum < 0) {
             retriesNumInput.setError(context.getString(R.string.error_wrong_retries_number));
             return null;
@@ -375,13 +369,15 @@ public class ForwardingConfigDialog {
             request.setUseChunkedMode(config.getChunkedMode());
 
             String result = request.execute();
-            if (!Objects.equals(result, Request.RESULT_SUCCESS)) {
-                result = Request.RESULT_ERROR;
-            }
+            final String shown = Objects.equals(result, Request.RESULT_SUCCESS)
+                    ? Request.RESULT_SUCCESS : Request.RESULT_ERROR;
 
-            Intent in = new Intent(BROADCAST_KEY);
-            in.putExtra(BROADCAST_KEY, result);
-            context.sendBroadcast(in);
+            // Show the result straight on the main thread. This used to go through
+            // an implicit broadcast and a receiver registered per dialog (never
+            // unregistered — a leak, and visible/spoofable by any other app).
+            final Context appContext = context.getApplicationContext();
+            new Handler(Looper.getMainLooper()).post(() ->
+                    Toast.makeText(appContext, shown, Toast.LENGTH_LONG).show());
         });
         thread.start();
     }
