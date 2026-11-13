@@ -25,3 +25,9 @@ output.json
 /captures
 .externalNativeBuild
 .cxx
+
+# Signing keys and their passwords: never commit these. Anyone holding the
+# key can sign an APK that Android accepts as an update to this app.
+*.jks
+*.keystore
+*.password
